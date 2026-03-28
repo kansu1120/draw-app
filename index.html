@@ -19,8 +19,8 @@
       --accent: #0a84ff;
       --accent-ink: #0b3d7a;
       --border: rgba(17, 24, 39, 0.12);
-      --shadow-soft: 0 14px 30px rgba(15, 23, 42, 0.18);
-      --shadow-tight: 0 6px 16px rgba(15, 23, 42, 0.12);
+      --shadow-soft: 0 0 0 rgba(0, 0, 0, 0);
+      --shadow-tight: 0 0 0 rgba(0, 0, 0, 0);
       --radius: 20px;
       --btn: 40px;
     }
@@ -50,10 +50,8 @@
       bottom: 0;
       display: block;
       padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 248, 251, 0.92));
-      backdrop-filter: blur(18px);
+      background: #f7f8fb;
       border-top: 1px solid rgba(15, 23, 42, 0.12);
-      box-shadow: 0 -14px 32px rgba(15, 23, 42, 0.2);
       overflow: visible;
       z-index: 200;
       animation: toolbar-in 0.5s ease;
@@ -62,16 +60,7 @@
       from { transform: translateY(16px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
-    #toolbar::before {
-      content: '';
-      position: absolute;
-      left: 18px;
-      right: 18px;
-      top: 0;
-      height: 1px;
-      background: rgba(255, 255, 255, 0.6);
-      pointer-events: none;
-    }
+    #toolbar::before { content: none; }
     .toolbar-row {
       display: block;
       overflow-x: auto;
@@ -94,11 +83,10 @@
       align-items: center;
       gap: 8px;
       padding: 6px;
-      background: var(--panel);
-      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: #ffffff;
+      border: 1px solid rgba(15, 23, 42, 0.12);
       border-radius: var(--radius);
-      box-shadow: var(--shadow-tight);
-      backdrop-filter: blur(12px);
+      box-shadow: none;
       flex: 0 0 auto;
     }
     .tool-group {
@@ -113,7 +101,7 @@
     .action-group { gap: 6px; padding: 6px; }
     .tool-btn, .color-btn, .action-btn, .width-btn, .toggle-btn {
       border: 1px solid rgba(15, 23, 42, 0.08);
-      background: #f5f6f9;
+      background: #f2f4f7;
       color: var(--ink);
       padding: 0 10px;
       border-radius: 12px;
@@ -133,8 +121,8 @@
     .tool-btn, .action-btn { padding: 0; width: var(--btn); }
     .tool-btn {
       border-radius: 14px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(241,244,248,0.9));
-      border-color: rgba(15, 23, 42, 0.1);
+      background: #f2f4f7;
+      border-color: rgba(15, 23, 42, 0.12);
     }
     .tool-btn.active::after {
       content: '';
@@ -144,12 +132,11 @@
       height: 6px;
       border-radius: 999px;
       background: var(--accent);
-      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
     }
     .tool-btn { position: relative; }
     .action-btn {
       border-radius: 999px;
-      background: #f2f4f8;
+      background: #f2f4f7;
     }
     button { font-family: inherit; }
     .tool-btn:active, .action-btn:active, .toggle-btn:active, .width-btn:active, .color-btn:active {
@@ -160,9 +147,9 @@
       outline-offset: 2px;
     }
     .tool-btn.active, .action-btn.active, .width-btn.active, .toggle-btn.active {
-      background: linear-gradient(180deg, rgba(10, 132, 255, 0.2), rgba(10, 132, 255, 0.08));
+      background: #eaf3ff;
       border-color: rgba(10, 132, 255, 0.45);
-      box-shadow: inset 0 0 0 2px rgba(10, 132, 255, 0.2), 0 6px 14px rgba(10, 132, 255, 0.18);
+      box-shadow: none;
       color: var(--accent-ink);
       font-weight: 600;
     }
@@ -173,12 +160,12 @@
       border-radius: 999px;
       min-width: 28px;
       background: transparent;
-      border: 2px solid rgba(255, 255, 255, 0.9);
-      box-shadow: 0 0 0 1px rgba(0,0,0,0.12), 0 6px 14px rgba(15,23,42,0.16);
+      border: 2px solid rgba(0,0,0,0.1);
+      box-shadow: none;
     }
     .color-btn.active {
       border: 2px solid var(--accent);
-      box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.35), 0 8px 16px rgba(15,23,42,0.2);
+      box-shadow: none;
     }
     .tool-btn .icon, .action-btn .icon, .toggle-btn .icon {
       width: 18px;
@@ -199,24 +186,27 @@
       align-items: center;
       gap: 10px;
       padding: 10px 8px;
-      position: static;
-      margin-top: 8px;
-      background: var(--panel-strong);
+      position: fixed;
+      margin: 0;
+      background: #ffffff;
       border: 1px solid rgba(15, 23, 42, 0.12);
       border-radius: 16px;
-      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
+      box-shadow: none;
       z-index: 300;
     }
-    .group.open .panel { display: flex; animation: panel-pop 0.18s ease; transform-origin: top center; }
+    .panel.floating { display: flex; animation: panel-pop 0.18s ease; transform-origin: top center; }
     @keyframes panel-pop {
-      from { transform: translateY(-4px) scale(0.98); opacity: 0; }
+      from { transform: translateY(6px) scale(0.98); opacity: 0; }
       to { transform: translateY(0) scale(1); opacity: 1; }
     }
-    .group.open {
-      flex-direction: column;
-      align-items: center;
-      box-shadow: var(--shadow-soft);
+    #panel-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      pointer-events: none;
     }
+    #panel-layer .panel { pointer-events: auto; }
+    .group.open { box-shadow: none; }
     .toggle-btn {
       min-width: 92px;
       height: 36px;
@@ -238,6 +228,32 @@
       transform: rotate(-135deg);
     }
     .toggle-btn .label { font-weight: 600; }
+    .toggle-preview {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+    .width-preview {
+      background: #ffffff;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+    }
+    .width-preview::after {
+      content: '';
+      width: var(--size, 8px);
+      height: var(--size, 8px);
+      background: var(--ink);
+      border-radius: 999px;
+      display: block;
+    }
+    .color-preview {
+      background: #111111;
+      border: 2px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.12);
+    }
     .width-btn {
       min-width: 32px;
       height: 32px;
@@ -249,6 +265,10 @@
       border: 1px solid rgba(15, 23, 42, 0.1);
     }
     .width-btn:active { transform: translateY(1px) scale(0.98); }
+    .width-btn.hover, .color-btn.hover {
+      border-color: rgba(10, 132, 255, 0.5);
+      box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.18);
+    }
     .width-sample {
       display: block;
       width: var(--dot, 8px);
@@ -333,6 +353,7 @@
             <circle cx="20" cy="12" r="2"></circle>
           </svg>
           <span class="label">Stroke</span>
+          <span class="toggle-preview width-preview" id="width-preview"></span>
         </button>
         <div class="panel" id="width-panel">
           <button class="width-btn" data-width="2" style="--dot:2px"><span class="width-sample"></span></button>
@@ -353,6 +374,7 @@
             <circle cx="15.5" cy="10.2" r="1.1"></circle>
           </svg>
           <span class="label">Color</span>
+          <span class="toggle-preview color-preview" id="color-preview"></span>
         </button>
         <div class="panel" id="color-panel">
           <button class="color-btn" data-color="#111111" style="background:#111111;"></button>
@@ -365,6 +387,7 @@
         </div>
       </div>
     </div>
+    <div id="panel-layer"></div>
     <div id="canvas-wrap">
       <canvas id="c"></canvas>
     </div>
@@ -397,7 +420,10 @@
       }
       function scheduleLayout() {
         setViewportHeight();
-        requestAnimationFrame(resizeCanvas);
+        requestAnimationFrame(() => {
+          resizeCanvas();
+          updateFloatingPanels();
+        });
       }
       window.addEventListener('resize', scheduleLayout);
       window.addEventListener('orientationchange', () => {
@@ -425,8 +451,17 @@
       const widthPanel = document.getElementById('width-panel');
       const colorPanel = document.getElementById('color-panel');
       const toolbarEl = document.getElementById('toolbar');
+      const toolbarRow = document.querySelector('.toolbar-row');
+      const panelLayer = document.getElementById('panel-layer');
       const undoBtn = document.getElementById('undo');
       const redoBtn = document.getElementById('redo');
+      const widthPreview = document.getElementById('width-preview');
+      const colorPreview = document.getElementById('color-preview');
+
+      if (panelLayer) {
+        panelLayer.appendChild(widthPanel);
+        panelLayer.appendChild(colorPanel);
+      }
 
       let currentTool = 'pen';
       let currentColor = '#111111';
@@ -436,11 +471,27 @@
       let suppressPointerId = null;
       let suppressToggleWidth = false;
       let suppressToggleColor = false;
+      let skipNextWidthClick = false;
+      let skipNextColorClick = false;
+      let dragPick = null;
+      let widthOpenedAt = 0;
+      let colorOpenedAt = 0;
+      const PANEL_IGNORE_MS = 100;
 
       const HISTORY_LIMIT = 30;
       const historyStack = [];
       const redoStack = [];
       let isRestoring = false;
+
+      function updateTogglePreviews() {
+        if (widthPreview) {
+          const size = Math.max(4, Math.min(14, Math.round(currentWidth)));
+          widthPreview.style.setProperty('--size', `${size}px`);
+        }
+        if (colorPreview) {
+          colorPreview.style.background = currentColor;
+        }
+      }
 
       function updateUndoRedo() {
         undoBtn.disabled = historyStack.length <= 1;
@@ -569,30 +620,198 @@
       });
 
       function closePanels(except) {
-        if (except !== widthGroup) widthGroup.classList.remove('open');
-        if (except !== colorGroup) colorGroup.classList.remove('open');
+        if (except !== widthGroup) {
+          widthGroup.classList.remove('open');
+          hidePanel(widthPanel);
+        }
+        if (except !== colorGroup) {
+          colorGroup.classList.remove('open');
+          hidePanel(colorPanel);
+        }
         toggleWidthBtn.classList.toggle('active', widthGroup.classList.contains('open'));
         toggleColorBtn.classList.toggle('active', colorGroup.classList.contains('open'));
       }
 
+      function hidePanel(panel) {
+        panel.classList.remove('floating');
+        panel.style.left = '';
+        panel.style.top = '';
+        panel.style.display = 'none';
+        if (panel === widthPanel) widthOpenedAt = 0;
+        if (panel === colorPanel) colorOpenedAt = 0;
+      }
+
+      function positionPanel(panel, toggle) {
+        const rect = toggle.getBoundingClientRect();
+        const panelRect = panel.getBoundingClientRect();
+        const half = panelRect.width / 2;
+        let left = rect.left + rect.width / 2;
+        left = Math.max(12 + half, Math.min(window.innerWidth - 12 - half, left));
+        let top = rect.top - panelRect.height - 10;
+        if (top < 8) {
+          top = rect.bottom + 10;
+        }
+        panel.style.left = `${left}px`;
+        panel.style.top = `${top}px`;
+      }
+
+      function showPanel(panel, toggle) {
+        panel.classList.add('floating');
+        panel.style.display = 'flex';
+        panel.style.visibility = 'hidden';
+        positionPanel(panel, toggle);
+        panel.style.visibility = '';
+        const now = Date.now();
+        if (panel === widthPanel) widthOpenedAt = now;
+        if (panel === colorPanel) colorOpenedAt = now;
+      }
+
+      function updateFloatingPanels() {
+        if (widthGroup.classList.contains('open')) positionPanel(widthPanel, toggleWidthBtn);
+        if (colorGroup.classList.contains('open')) positionPanel(colorPanel, toggleColorBtn);
+      }
+
+      if (toolbarRow) {
+        toolbarRow.addEventListener('scroll', () => {
+          if (widthGroup.classList.contains('open') || colorGroup.classList.contains('open')) {
+            updateFloatingPanels();
+          }
+        });
+      }
+
+      function openPanel(group, panel, toggle) {
+        group.classList.add('open');
+        closePanels(group);
+        showPanel(panel, toggle);
+      }
+
       toggleWidthBtn.addEventListener('click', () => {
-        if (suppressToggleWidth) {
-          suppressToggleWidth = false;
+        if (widthGroup.classList.contains('open') && Date.now() - widthOpenedAt < PANEL_IGNORE_MS) {
           return;
         }
-        widthGroup.classList.toggle('open');
-        closePanels(widthGroup);
+        if (widthGroup.classList.contains('open')) {
+          suppressToggleWidth = false;
+          skipNextWidthClick = false;
+          closePanels();
+          return;
+        }
+        if (suppressToggleWidth || skipNextWidthClick) {
+          suppressToggleWidth = false;
+          skipNextWidthClick = false;
+          return;
+        }
+        openPanel(widthGroup, widthPanel, toggleWidthBtn);
       });
 
       toggleColorBtn.addEventListener('click', () => {
-        if (suppressToggleColor) {
-          suppressToggleColor = false;
+        if (colorGroup.classList.contains('open') && Date.now() - colorOpenedAt < PANEL_IGNORE_MS) {
           return;
         }
-        colorGroup.classList.toggle('open');
-        closePanels(colorGroup);
+        if (colorGroup.classList.contains('open')) {
+          suppressToggleColor = false;
+          skipNextColorClick = false;
+          closePanels();
+          return;
+        }
+        if (suppressToggleColor || skipNextColorClick) {
+          suppressToggleColor = false;
+          skipNextColorClick = false;
+          return;
+        }
+        openPanel(colorGroup, colorPanel, toggleColorBtn);
       });
       closePanels();
+
+      function clearHoverOptions() {
+        document.querySelectorAll('.width-btn.hover, .color-btn.hover')
+          .forEach(el => el.classList.remove('hover'));
+      }
+
+      function startDragPick(type, e) {
+        const group = type === 'width' ? widthGroup : colorGroup;
+        const panel = type === 'width' ? widthPanel : colorPanel;
+        const selector = type === 'width' ? '.width-btn' : '.color-btn';
+        const toggle = type === 'width' ? toggleWidthBtn : toggleColorBtn;
+        const wasOpen = group.classList.contains('open');
+        if (!wasOpen) {
+          openPanel(group, panel, toggle);
+        }
+        dragPick = {
+          type,
+          pointerId: e.pointerId,
+          startX: e.clientX,
+          startY: e.clientY,
+          moved: false,
+          wasOpen,
+          panel,
+          selector,
+          toggle,
+          lastOption: null
+        };
+        document.addEventListener('pointermove', onDragPickMove, true);
+        document.addEventListener('pointerup', onDragPickEnd, true);
+        document.addEventListener('pointercancel', onDragPickEnd, true);
+      }
+
+      function onDragPickMove(e) {
+        if (!dragPick || e.pointerId !== dragPick.pointerId) return;
+        const dx = e.clientX - dragPick.startX;
+        const dy = e.clientY - dragPick.startY;
+        if (!dragPick.moved && Math.hypot(dx, dy) > 4) {
+          dragPick.moved = true;
+        }
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        if (!el) return;
+        const option = el.closest(dragPick.selector);
+        if (option && dragPick.panel.contains(option)) {
+          if (dragPick.lastOption !== option) {
+            clearHoverOptions();
+            option.classList.add('hover');
+            dragPick.lastOption = option;
+          }
+        }
+      }
+
+      function onDragPickEnd(e) {
+        if (!dragPick || e.pointerId !== dragPick.pointerId) return;
+        document.removeEventListener('pointermove', onDragPickMove, true);
+        document.removeEventListener('pointerup', onDragPickEnd, true);
+        document.removeEventListener('pointercancel', onDragPickEnd, true);
+        const picked = dragPick.moved && dragPick.lastOption;
+        if (picked) {
+          dragPick.lastOption.click();
+        } else if (dragPick.wasOpen && dragPick.toggle.contains(e.target)) {
+          closePanels();
+        }
+        clearHoverOptions();
+        dragPick = null;
+      }
+
+      toggleWidthBtn.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (widthGroup.classList.contains('open')) {
+          if (Date.now() - widthOpenedAt < PANEL_IGNORE_MS) return;
+          closePanels();
+          suppressToggleWidth = true;
+          skipNextWidthClick = true;
+          return;
+        }
+        skipNextWidthClick = true;
+        startDragPick('width', e);
+      });
+
+      toggleColorBtn.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (colorGroup.classList.contains('open')) {
+          if (Date.now() - colorOpenedAt < PANEL_IGNORE_MS) return;
+          closePanels();
+          suppressToggleColor = true;
+          skipNextColorClick = true;
+          return;
+        }
+        skipNextColorClick = true;
+        startDragPick('color', e);
+      });
 
       function isInsideOpenPanel(target) {
         if (widthGroup.classList.contains('open') && widthPanel.contains(target)) return true;
@@ -655,6 +874,7 @@
           if (canvas.freeDrawingBrush === penBrush) {
             canvas.freeDrawingBrush.color = currentColor;
           }
+          updateTogglePreviews();
           closePanels(colorGroup);
         });
       });
@@ -666,6 +886,7 @@
         widthButtons.forEach(btn => {
           btn.classList.toggle('active', parseInt(btn.dataset.width, 10) === width);
         });
+        updateTogglePreviews();
       }
 
       widthButtons.forEach(btn => {
