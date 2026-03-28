@@ -255,6 +255,9 @@
       const toggleColorBtn = document.getElementById('toggle-color');
       const widthGroup = document.getElementById('width-group');
       const colorGroup = document.getElementById('color-group');
+      const widthPanel = document.getElementById('width-panel');
+      const colorPanel = document.getElementById('color-panel');
+      const toolbarEl = document.getElementById('toolbar');
       const undoBtn = document.getElementById('undo');
       const redoBtn = document.getElementById('redo');
 
@@ -263,6 +266,9 @@
       let currentWidth = 4;
       let penBrush = null;
       let pixelEraserBrush = null;
+      let suppressPointerId = null;
+      let suppressToggleWidth = false;
+      let suppressToggleColor = false;
 
       const undoStack = [];
       const redoStack = [];
@@ -389,15 +395,74 @@
       }
 
       toggleWidthBtn.addEventListener('click', () => {
+        if (suppressToggleWidth) {
+          suppressToggleWidth = false;
+          return;
+        }
         widthGroup.classList.toggle('open');
         closePanels(widthGroup);
       });
 
       toggleColorBtn.addEventListener('click', () => {
+        if (suppressToggleColor) {
+          suppressToggleColor = false;
+          return;
+        }
         colorGroup.classList.toggle('open');
         closePanels(colorGroup);
       });
       closePanels();
+
+      function isInsideOpenPanel(target) {
+        if (widthGroup.classList.contains('open') && widthPanel.contains(target)) return true;
+        if (colorGroup.classList.contains('open') && colorPanel.contains(target)) return true;
+        return false;
+      }
+
+      function handleOutsidePointerDown(e) {
+        const isPanelOpen =
+          widthGroup.classList.contains('open') || colorGroup.classList.contains('open');
+        if (!isPanelOpen) return;
+        if (isInsideOpenPanel(e.target)) return;
+        if (widthGroup.classList.contains('open') && toggleWidthBtn.contains(e.target)) {
+          suppressToggleWidth = true;
+        }
+        if (colorGroup.classList.contains('open') && toggleColorBtn.contains(e.target)) {
+          suppressToggleColor = true;
+        }
+        closePanels();
+        cancelPendingDraw();
+        blockDrawing = true;
+        suppressPointerId = e.pointerId;
+      }
+
+      document.addEventListener('pointerdown', handleOutsidePointerDown, true);
+      canvas.upperCanvasEl.addEventListener('pointerdown', handleOutsidePointerDown, true);
+      document.addEventListener('pointerup', (e) => {
+        if (suppressPointerId === e.pointerId) {
+          suppressPointerId = null;
+          blockDrawing = false;
+        }
+      });
+      document.addEventListener('pointercancel', (e) => {
+        if (suppressPointerId === e.pointerId) {
+          suppressPointerId = null;
+          blockDrawing = false;
+        }
+      });
+      toolbarEl.addEventListener('pointerdown', (e) => {
+        cancelPendingDraw();
+        blockDrawing = true;
+        e.stopPropagation();
+      });
+      toolbarEl.addEventListener('pointerup', (e) => {
+        blockDrawing = false;
+        e.stopPropagation();
+      });
+      toolbarEl.addEventListener('pointercancel', (e) => {
+        blockDrawing = false;
+        e.stopPropagation();
+      });
 
       colorButtons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -778,6 +843,7 @@
           return;
         }
         if (isGesturing) return;
+        if (suppressPointerId === e.pointerId) return;
 
         const point = canvas.getPointer(e);
         if ((currentTool === 'pen' || currentTool === 'erase-pixel') && e.pointerType === 'touch') {
@@ -866,6 +932,12 @@
           return;
         }
 
+        if (suppressPointerId === e.pointerId) {
+          suppressPointerId = null;
+          blockDrawing = false;
+          cancelPendingDraw();
+          return;
+        }
         if (pendingDraw && pendingDraw.pointerId === e.pointerId) {
           cancelPendingDraw();
           blockDrawing = false;
