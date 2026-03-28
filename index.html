@@ -40,7 +40,7 @@
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
       flex: 0 0 auto;
     }
-    .tool-btn, .color-btn, .action-btn, .width-btn {
+    .tool-btn, .color-btn, .action-btn, .width-btn, .toggle-btn {
       border: 1px solid transparent;
       background: #f6f6f6;
       color: var(--ink);
@@ -57,7 +57,7 @@
       align-items: center;
       justify-content: center;
     }
-    .tool-btn.active, .action-btn.active, .width-btn.active {
+    .tool-btn.active, .action-btn.active, .width-btn.active, .toggle-btn.active {
       background: linear-gradient(180deg, #eaf3ff, #d8e9ff);
       border-color: rgba(10, 132, 255, 0.4);
       box-shadow: inset 0 0 0 1px rgba(10, 132, 255, 0.25);
@@ -88,7 +88,32 @@
       stroke-linejoin: round;
     }
     .width-group { display: flex; align-items: center; gap: 6px; }
-    .width-label { font-size: 11px; color: var(--muted); margin-right: 2px; }
+    .panel {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding-left: 4px;
+    }
+    .group.open .panel { display: flex; }
+    .toggle-btn {
+      min-width: 44px;
+      height: 32px;
+      padding: 0 10px;
+      position: relative;
+    }
+    .toggle-btn::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(45deg);
+      margin-left: 6px;
+      opacity: 0.7;
+    }
+    .group.open .toggle-btn::after {
+      transform: rotate(-135deg);
+    }
     .width-btn {
       min-width: 30px;
       height: 30px;
@@ -149,21 +174,26 @@
         </button>
       </div>
 
-      <div class="group width-group">
-        <span class="width-label">Stroke</span>
-        <button class="width-btn" data-width="2" style="--dot:2px"><span class="width-sample"></span></button>
-        <button class="width-btn" data-width="4" style="--dot:4px"><span class="width-sample"></span></button>
-        <button class="width-btn" data-width="6" style="--dot:6px"><span class="width-sample"></span></button>
-        <button class="width-btn" data-width="8" style="--dot:8px"><span class="width-sample"></span></button>
-        <button class="width-btn" data-width="12" style="--dot:12px"><span class="width-sample"></span></button>
-        <button class="width-btn" data-width="16" style="--dot:16px"><span class="width-sample"></span></button>
+      <div class="group width-group" id="width-group">
+        <button class="toggle-btn" id="toggle-width" title="Stroke" aria-label="Stroke">Stroke</button>
+        <div class="panel" id="width-panel">
+          <button class="width-btn" data-width="2" style="--dot:2px"><span class="width-sample"></span></button>
+          <button class="width-btn" data-width="4" style="--dot:4px"><span class="width-sample"></span></button>
+          <button class="width-btn" data-width="6" style="--dot:6px"><span class="width-sample"></span></button>
+          <button class="width-btn" data-width="8" style="--dot:8px"><span class="width-sample"></span></button>
+          <button class="width-btn" data-width="12" style="--dot:12px"><span class="width-sample"></span></button>
+          <button class="width-btn" data-width="16" style="--dot:16px"><span class="width-sample"></span></button>
+        </div>
       </div>
 
-      <div class="group">
-        <button class="color-btn" data-color="#111111" style="background:#111111;"></button>
-        <button class="color-btn" data-color="#e53935" style="background:#e53935;"></button>
-        <button class="color-btn" data-color="#1e88e5" style="background:#1e88e5;"></button>
-        <button class="color-btn" data-color="#43a047" style="background:#43a047;"></button>
+      <div class="group" id="color-group">
+        <button class="toggle-btn" id="toggle-color" title="Color" aria-label="Color">Color</button>
+        <div class="panel" id="color-panel">
+          <button class="color-btn" data-color="#111111" style="background:#111111;"></button>
+          <button class="color-btn" data-color="#e53935" style="background:#e53935;"></button>
+          <button class="color-btn" data-color="#1e88e5" style="background:#1e88e5;"></button>
+          <button class="color-btn" data-color="#43a047" style="background:#43a047;"></button>
+        </div>
       </div>
 
       <div class="group">
@@ -185,6 +215,8 @@
         selection: false,
         preserveObjectStacking: true
       });
+      const defaultPerPixelTargetFind = canvas.perPixelTargetFind;
+      const defaultTargetFindTolerance = canvas.targetFindTolerance;
 
       canvas.upperCanvasEl.style.touchAction = 'none';
 
@@ -200,6 +232,10 @@
       const toolButtons = Array.from(document.querySelectorAll('.tool-btn'));
       const colorButtons = Array.from(document.querySelectorAll('.color-btn'));
       const widthButtons = Array.from(document.querySelectorAll('.width-btn'));
+      const toggleWidthBtn = document.getElementById('toggle-width');
+      const toggleColorBtn = document.getElementById('toggle-color');
+      const widthGroup = document.getElementById('width-group');
+      const colorGroup = document.getElementById('color-group');
       const undoBtn = document.getElementById('undo');
       const redoBtn = document.getElementById('redo');
 
@@ -305,10 +341,16 @@
           canvas.isDrawingMode = false;
           canvas.selection = false;
           canvas.skipTargetFind = false;
+          canvas.perPixelTargetFind = true;
+          canvas.targetFindTolerance = 0;
         } else {
           canvas.isDrawingMode = false;
           canvas.selection = false;
           canvas.skipTargetFind = true;
+        }
+        if (tool !== 'erase-object') {
+          canvas.perPixelTargetFind = defaultPerPixelTargetFind;
+          canvas.targetFindTolerance = defaultTargetFindTolerance;
         }
         if (tool !== 'select') {
           canvas.discardActiveObject();
@@ -320,6 +362,24 @@
         btn.addEventListener('click', () => setTool(btn.dataset.tool));
       });
 
+      function closePanels(except) {
+        if (except !== widthGroup) widthGroup.classList.remove('open');
+        if (except !== colorGroup) colorGroup.classList.remove('open');
+        toggleWidthBtn.classList.toggle('active', widthGroup.classList.contains('open'));
+        toggleColorBtn.classList.toggle('active', colorGroup.classList.contains('open'));
+      }
+
+      toggleWidthBtn.addEventListener('click', () => {
+        widthGroup.classList.toggle('open');
+        closePanels(widthGroup);
+      });
+
+      toggleColorBtn.addEventListener('click', () => {
+        colorGroup.classList.toggle('open');
+        closePanels(colorGroup);
+      });
+      closePanels();
+
       colorButtons.forEach(btn => {
         btn.addEventListener('click', () => {
           currentColor = btn.dataset.color;
@@ -330,6 +390,7 @@
           if (canvas.freeDrawingBrush === penBrush) {
             canvas.freeDrawingBrush.color = currentColor;
           }
+          closePanels(colorGroup);
         });
       });
 
@@ -345,6 +406,7 @@
       widthButtons.forEach(btn => {
         btn.addEventListener('click', () => {
           setWidth(parseInt(btn.dataset.width, 10));
+          closePanels(widthGroup);
         });
       });
 
