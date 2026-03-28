@@ -29,13 +29,12 @@
     }
     .toolbar-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 12px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
     .group {
-      position: relative;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -100,9 +99,8 @@
       align-items: center;
       gap: 8px;
       padding: 10px;
-      position: absolute;
-      top: 44px;
-      left: 0;
+      position: static;
+      margin-top: 6px;
       background: #fff;
       border: 1px solid var(--border);
       border-radius: 14px;
@@ -110,6 +108,10 @@
       z-index: 200;
     }
     .group.open .panel { display: flex; }
+    .group.open {
+      flex-direction: column;
+      align-items: center;
+    }
     .toggle-btn {
       min-width: 44px;
       height: 32px;
