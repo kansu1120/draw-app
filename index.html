@@ -17,7 +17,9 @@
     html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
     #app { height: 100%; display: flex; flex-direction: column; }
     #toolbar {
-      position: sticky;
+      position: fixed;
+      left: 0;
+      right: 0;
       bottom: 0;
       display: block;
       padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
@@ -294,7 +296,8 @@
           skewX: obj.skewX,
           skewY: obj.skewY,
           flipX: obj.flipX,
-          flipY: obj.flipY
+          flipY: obj.flipY,
+          fill: obj.fill
         };
       }
 
@@ -365,7 +368,7 @@
         } else if (tool === 'erase-object') {
           canvas.isDrawingMode = false;
           canvas.selection = false;
-          canvas.skipTargetFind = false;
+          canvas.skipTargetFind = true;
           canvas.perPixelTargetFind = true;
           canvas.targetFindTolerance = 0;
         } else {
@@ -526,6 +529,14 @@
         path.setCoords();
         pushAction({ type: 'add', objects: [path] });
       });
+
+      function findTargetForAction(e) {
+        const prev = canvas.skipTargetFind;
+        canvas.skipTargetFind = false;
+        const target = canvas.findTarget(e);
+        canvas.skipTargetFind = prev;
+        return target;
+      }
 
       // Transform tracking
       let pendingTransform = null;
@@ -702,7 +713,7 @@
       }
 
       function eraseAtEvent(e) {
-        const target = canvas.findTarget(e);
+        const target = findTargetForAction(e);
         if (!target) return;
         if (target.type === 'activeSelection') {
           target._objects.forEach(removeObject);
