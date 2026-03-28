@@ -75,6 +75,7 @@
     .toolbar-row {
       display: block;
       overflow-x: auto;
+      overflow-y: visible;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
     }
@@ -255,19 +256,11 @@
       background: currentColor;
       border-radius: 999px;
     }
-    #canvas-wrap { flex: 1 1 auto; min-height: 0; position: relative; background: var(--paper); }
-    #canvas-wrap::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
-        radial-gradient(400px 300px at 20% 10%, rgba(10, 132, 255, 0.08), transparent 60%);
-      background-size: 28px 28px, 28px 28px, 100% 100%;
-      opacity: 0.55;
-      pointer-events: none;
-      z-index: 0;
+    #canvas-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      position: relative;
+      background: radial-gradient(600px 420px at 18% 8%, rgba(10, 132, 255, 0.06), transparent 60%), var(--paper);
     }
     canvas { display: block; width: 100%; height: 100%; touch-action: none; position: relative; z-index: 1; }
     .spacer { flex: 1 1 auto; }
@@ -281,6 +274,20 @@
     <div id="toolbar">
       <div class="toolbar-row">
         <div class="toolbar-scroll">
+        <div class="group action-group" id="action-group">
+        <button class="action-btn" id="undo" title="Undo" aria-label="Undo">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 7H4v5"></path>
+            <path d="M4 12c1.6-4 6.3-6 10.3-3.9 2.6 1.4 3.7 4.6 2.6 7.4"></path>
+          </svg>
+        </button>
+        <button class="action-btn" id="redo" title="Redo" aria-label="Redo">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 7h5v5"></path>
+            <path d="M20 12c-1.6-4-6.3-6-10.3-3.9-2.6 1.4-3.7 4.6-2.6 7.4"></path>
+          </svg>
+        </button>
+        </div>
         <div class="group tool-group" id="tool-group">
         <button class="tool-btn" data-tool="pen" title="Pen" aria-label="Pen">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -355,20 +362,6 @@
         </div>
         </div>
 
-        <div class="group action-group" id="action-group">
-        <button class="action-btn" id="undo" title="Undo" aria-label="Undo">
-          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9 7H4v5"></path>
-            <path d="M4 12c1.6-4 6.3-6 10.3-3.9 2.6 1.4 3.7 4.6 2.6 7.4"></path>
-          </svg>
-        </button>
-        <button class="action-btn" id="redo" title="Redo" aria-label="Redo">
-          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15 7h5v5"></path>
-            <path d="M20 12c-1.6-4-6.3-6-10.3-3.9-2.6 1.4-3.7 4.6-2.6 7.4"></path>
-          </svg>
-        </button>
-        </div>
         </div>
       </div>
     </div>
