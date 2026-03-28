@@ -310,6 +310,13 @@
       <div class="toolbar-row">
         <div class="toolbar-scroll">
         <div class="group action-group" id="action-group">
+        <button class="action-btn" id="import-image" title="Import" aria-label="Import">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="4" y="6" width="16" height="12" rx="2"></rect>
+            <circle cx="9" cy="11" r="1.8"></circle>
+            <path d="M4 16l4-4 4 4 4-5 4 5"></path>
+          </svg>
+        </button>
         <button class="action-btn" id="undo" title="Undo" aria-label="Undo">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M9 7H4v5"></path>
@@ -414,6 +421,7 @@
         </div>
       </div>
     </div>
+    <input id="image-input" type="file" accept="image/*" style="display:none" />
     <div id="panel-layer"></div>
     <div id="canvas-wrap">
       <canvas id="c"></canvas>
@@ -482,6 +490,8 @@
       const panelLayer = document.getElementById('panel-layer');
       const undoBtn = document.getElementById('undo');
       const redoBtn = document.getElementById('redo');
+      const importBtn = document.getElementById('import-image');
+      const imageInput = document.getElementById('image-input');
       const widthPreview = document.getElementById('width-preview');
       const colorPreview = document.getElementById('color-preview');
       const gridToggleBtn = document.getElementById('toggle-grid');
@@ -489,6 +499,38 @@
       if (panelLayer) {
         panelLayer.appendChild(widthPanel);
         panelLayer.appendChild(colorPanel);
+      }
+
+      if (importBtn && imageInput) {
+        importBtn.addEventListener('click', () => imageInput.click());
+        imageInput.addEventListener('change', () => {
+          const file = imageInput.files && imageInput.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result;
+            fabric.Image.fromURL(dataUrl, (img) => {
+              const maxW = canvas.getWidth() * 0.8;
+              const maxH = canvas.getHeight() * 0.8;
+              const scale = Math.min(1, maxW / img.width, maxH / img.height);
+              img.set({
+                originX: 'center',
+                originY: 'center',
+                left: canvas.getWidth() / 2,
+                top: canvas.getHeight() / 2,
+                selectable: true,
+                evented: true
+              });
+              img.scale(scale);
+              canvas.add(img);
+              canvas.setActiveObject(img);
+              pushAction();
+              canvas.requestRenderAll();
+            });
+          };
+          reader.readAsDataURL(file);
+          imageInput.value = '';
+        });
       }
 
       let currentTool = 'pen';
