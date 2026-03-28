@@ -4,17 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Mobile Freeform Lite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap">
   <style>
     :root {
-      --bg: #f5f5f2;
-      --panel: #ffffff;
-      --ink: #1a1a1a;
-      --muted: #6b6b6b;
+      --bg-1: #f8f3ec;
+      --bg-2: #e9eef4;
+      --paper: #fffdf8;
+      --panel: rgba(255, 255, 255, 0.9);
+      --panel-strong: #ffffff;
+      --ink: #1c1c1c;
+      --muted: #6f747a;
       --accent: #0a84ff;
-      --border: #e2e2df;
+      --accent-ink: #0b3d7a;
+      --border: rgba(17, 24, 39, 0.12);
+      --shadow-soft: 0 14px 30px rgba(15, 23, 42, 0.18);
+      --shadow-tight: 0 6px 16px rgba(15, 23, 42, 0.12);
+      --radius: 20px;
+      --btn: 40px;
     }
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background:
+        radial-gradient(1400px 900px at 10% -10%, #ffffff 0%, #f7f2ea 40%, transparent 70%),
+        radial-gradient(1200px 800px at 110% 0%, #f2f6fb 0%, transparent 60%),
+        linear-gradient(180deg, var(--bg-1), var(--bg-2));
+      color: var(--ink);
+      font-family: "Manrope", "SF Pro Display", "Segoe UI", system-ui, -apple-system, sans-serif;
+      letter-spacing: 0.1px;
+    }
     #app { height: 100%; display: flex; flex-direction: column; }
     #toolbar {
       position: fixed;
@@ -22,40 +43,73 @@
       right: 0;
       bottom: 0;
       display: block;
-      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(16px);
-      border-top: 1px solid var(--border);
+      padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 248, 251, 0.92));
+      backdrop-filter: blur(18px);
+      border-top: 1px solid rgba(15, 23, 42, 0.12);
+      box-shadow: 0 -14px 32px rgba(15, 23, 42, 0.2);
       overflow: visible;
-      z-index: 50;
+      z-index: 200;
+      animation: toolbar-in 0.5s ease;
+    }
+    @keyframes toolbar-in {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    #toolbar::before {
+      content: '';
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: 0;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.6);
+      pointer-events: none;
     }
     .toolbar-row {
       display: flex;
-      align-items: flex-start;
-      gap: 12px;
+      align-items: center;
+      gap: 10px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2px 4px;
     }
+    .toolbar-row::-webkit-scrollbar { display: none; }
     .group {
       display: flex;
       align-items: center;
       gap: 8px;
       padding: 6px;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      background: var(--panel);
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-tight);
+      backdrop-filter: blur(12px);
       flex: 0 0 auto;
     }
+    .tool-group {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-x: auto;
+      gap: 6px;
+      padding: 8px;
+      border-radius: 22px;
+      scroll-behavior: smooth;
+    }
+    .tool-group::-webkit-scrollbar { display: none; }
+    .control-group { padding: 6px 8px; }
+    .action-group { gap: 6px; padding: 6px; }
     .tool-btn, .color-btn, .action-btn, .width-btn, .toggle-btn {
-      border: 1px solid transparent;
-      background: #f6f6f6;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: #f5f6f9;
       color: var(--ink);
-      padding: 6px 10px;
+      padding: 0 10px;
       border-radius: 12px;
       font-size: 12px;
-      min-width: 54px;
-      height: 32px;
+      min-width: var(--btn);
+      height: var(--btn);
       text-align: center;
       user-select: none;
       touch-action: manipulation;
@@ -63,31 +117,65 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 6px;
+      transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+    .tool-btn, .action-btn { padding: 0; width: var(--btn); }
+    .tool-btn {
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(241,244,248,0.9));
+      border-color: rgba(15, 23, 42, 0.1);
+    }
+    .tool-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 4px;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+    }
+    .tool-btn { position: relative; }
+    .action-btn {
+      border-radius: 999px;
+      background: #f2f4f8;
+    }
+    button { font-family: inherit; }
+    .tool-btn:active, .action-btn:active, .toggle-btn:active, .width-btn:active, .color-btn:active {
+      transform: translateY(1px) scale(0.98);
+    }
+    .tool-btn:focus-visible, .action-btn:focus-visible, .toggle-btn:focus-visible, .width-btn:focus-visible, .color-btn:focus-visible {
+      outline: 2px solid rgba(10, 132, 255, 0.4);
+      outline-offset: 2px;
     }
     .tool-btn.active, .action-btn.active, .width-btn.active, .toggle-btn.active {
-      background: linear-gradient(180deg, #eaf3ff, #d8e9ff);
-      border-color: rgba(10, 132, 255, 0.4);
-      box-shadow: inset 0 0 0 1px rgba(10, 132, 255, 0.25);
-      color: #0a4ea3;
+      background: linear-gradient(180deg, rgba(10, 132, 255, 0.2), rgba(10, 132, 255, 0.08));
+      border-color: rgba(10, 132, 255, 0.45);
+      box-shadow: inset 0 0 0 2px rgba(10, 132, 255, 0.2), 0 6px 14px rgba(10, 132, 255, 0.18);
+      color: var(--accent-ink);
       font-weight: 600;
     }
     .color-btn {
-      width: 26px;
-      height: 26px;
+      width: 28px;
+      height: 28px;
       padding: 0;
       border-radius: 999px;
-      min-width: 26px;
+      min-width: 28px;
       background: transparent;
-      border: 2px solid #fff;
-      box-shadow: 0 0 0 1px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.12);
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.12), 0 6px 14px rgba(15,23,42,0.16);
     }
-    .color-btn.active { border: 2px solid var(--accent); }
-    .tool-btn .icon {
+    .color-btn.active {
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.35), 0 8px 16px rgba(15,23,42,0.2);
+    }
+    .tool-btn .icon, .action-btn .icon, .toggle-btn .icon {
       width: 18px;
       height: 18px;
       display: block;
     }
-    .tool-btn svg {
+    .tool-btn svg, .action-btn svg, .toggle-btn svg {
       stroke: currentColor;
       stroke-width: 2;
       fill: none;
@@ -99,26 +187,32 @@
       display: none;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
-      padding: 10px;
+      gap: 10px;
+      padding: 10px 8px;
       position: static;
-      margin-top: 6px;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16);
-      z-index: 200;
+      margin-top: 8px;
+      background: var(--panel-strong);
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.2);
+      z-index: 300;
     }
-    .group.open .panel { display: flex; }
+    .group.open .panel { display: flex; animation: panel-pop 0.18s ease; transform-origin: top center; }
+    @keyframes panel-pop {
+      from { transform: translateY(-4px) scale(0.98); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
     .group.open {
       flex-direction: column;
       align-items: center;
+      box-shadow: var(--shadow-soft);
     }
     .toggle-btn {
-      min-width: 44px;
-      height: 32px;
-      padding: 0 10px;
+      min-width: 92px;
+      height: 36px;
+      padding: 0 12px;
       position: relative;
+      border-radius: 999px;
     }
     .toggle-btn::after {
       content: '';
@@ -133,23 +227,40 @@
     .group.open .toggle-btn::after {
       transform: rotate(-135deg);
     }
+    .toggle-btn .label { font-weight: 600; }
     .width-btn {
-      min-width: 30px;
-      height: 30px;
+      min-width: 32px;
+      height: 32px;
       padding: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      background: #f6f7fa;
+      border: 1px solid rgba(15, 23, 42, 0.1);
     }
+    .width-btn:active { transform: translateY(1px) scale(0.98); }
     .width-sample {
       display: block;
       width: var(--dot, 8px);
       height: var(--dot, 8px);
-      background: #222;
+      background: currentColor;
       border-radius: 999px;
     }
-    #canvas-wrap { flex: 1; position: relative; }
-    canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    #canvas-wrap { flex: 1; position: relative; background: var(--paper); }
+    #canvas-wrap::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+        radial-gradient(400px 300px at 20% 10%, rgba(10, 132, 255, 0.08), transparent 60%);
+      background-size: 28px 28px, 28px 28px, 100% 100%;
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 0;
+    }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; position: relative; z-index: 1; }
     .spacer { flex: 1 1 auto; }
   </style>
 </head>
@@ -157,7 +268,7 @@
   <div id="app">
     <div id="toolbar">
       <div class="toolbar-row">
-        <div class="group">
+        <div class="group tool-group" id="tool-group">
         <button class="tool-btn" data-tool="pen" title="Pen" aria-label="Pen">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
             <line x1="4" y1="20" x2="20" y2="4"></line>
@@ -194,8 +305,15 @@
         </button>
         </div>
 
-        <div class="group width-group" id="width-group">
-        <button class="toggle-btn" id="toggle-width" title="Stroke" aria-label="Stroke">Stroke</button>
+        <div class="group control-group width-group" id="width-group">
+        <button class="toggle-btn" id="toggle-width" title="Stroke" aria-label="Stroke">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <line x1="4" y1="12" x2="20" y2="12"></line>
+            <circle cx="4" cy="12" r="2"></circle>
+            <circle cx="20" cy="12" r="2"></circle>
+          </svg>
+          <span class="label">Stroke</span>
+        </button>
         <div class="panel" id="width-panel">
           <button class="width-btn" data-width="2" style="--dot:2px"><span class="width-sample"></span></button>
           <button class="width-btn" data-width="4" style="--dot:4px"><span class="width-sample"></span></button>
@@ -206,8 +324,16 @@
         </div>
         </div>
 
-        <div class="group" id="color-group">
-        <button class="toggle-btn" id="toggle-color" title="Color" aria-label="Color">Color</button>
+        <div class="group control-group" id="color-group">
+        <button class="toggle-btn" id="toggle-color" title="Color" aria-label="Color">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3c4.9 0 9 3.1 9 7 0 2.5-1.6 4-4.1 4h-1.6a1.5 1.5 0 0 0-1.5 1.5v.3a2 2 0 0 1-2 2h-.3C7 18.8 3 15.8 3 11c0-4.2 4.1-8 9-8z"></path>
+            <circle cx="8.5" cy="10.2" r="1.1"></circle>
+            <circle cx="12" cy="7.8" r="1.1"></circle>
+            <circle cx="15.5" cy="10.2" r="1.1"></circle>
+          </svg>
+          <span class="label">Color</span>
+        </button>
         <div class="panel" id="color-panel">
           <button class="color-btn" data-color="#111111" style="background:#111111;"></button>
           <button class="color-btn" data-color="#e53935" style="background:#e53935;"></button>
@@ -216,9 +342,19 @@
         </div>
         </div>
 
-        <div class="group">
-        <button class="action-btn" id="undo" title="Undo">↶</button>
-        <button class="action-btn" id="redo" title="Redo">↷</button>
+        <div class="group action-group" id="action-group">
+        <button class="action-btn" id="undo" title="Undo" aria-label="Undo">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 7H4v5"></path>
+            <path d="M4 12c1.6-4 6.3-6 10.3-3.9 2.6 1.4 3.7 4.6 2.6 7.4"></path>
+          </svg>
+        </button>
+        <button class="action-btn" id="redo" title="Redo" aria-label="Redo">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 7h5v5"></path>
+            <path d="M20 12c-1.6-4-6.3-6-10.3-3.9-2.6 1.4-3.7 4.6-2.6 7.4"></path>
+          </svg>
+        </button>
         </div>
       </div>
     </div>
