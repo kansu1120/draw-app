@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Mobile Freeform Lite</title>
+  <style>
+    :root {
+      --bg: #f5f5f2;
+      --panel: #ffffff;
+      --ink: #1a1a1a;
+      --muted: #6b6b6b;
+      --accent: #0a84ff;
+      --border: #e2e2df;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    #app { height: 100%; display: flex; flex-direction: column; }
+    #toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding: 10px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+    .tool-btn, .color-btn, .action-btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      min-width: 64px;
+      text-align: center;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    .tool-btn.active, .action-btn.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(10,132,255,0.15); }
+    .color-btn { width: 28px; height: 28px; padding: 0; border-radius: 999px; min-width: 28px; }
+    .color-btn.active { border: 2px solid var(--accent); }
+    .width-group { display: flex; align-items: center; gap: 6px; }
+    .width-label { font-size: 12px; color: var(--muted); }
+    .width-btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 6px 8px;
+      border-radius: 10px;
+      min-width: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    .width-btn.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(10,132,255,0.15); }
+    .width-sample {
+      display: block;
+      width: 26px;
+      background: #222;
+      border-radius: 999px;
+    }
+    #canvas-wrap { flex: 1; position: relative; }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    .spacer { flex: 1 1 auto; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="toolbar">
+      <button class="tool-btn" data-tool="pen">Pen</button>
+      <button class="tool-btn" data-tool="line">Line</button>
+      <button class="tool-btn" data-tool="circle">Circle</button>
+      <button class="tool-btn" data-tool="select">Select</button>
+      <button class="tool-btn" data-tool="erase-pixel">Eraser</button>
+      <button class="tool-btn" data-tool="erase-object">Obj Erase</button>
+
+      <div class="width-group">
+        <span class="width-label">Stroke</span>
+        <button class="width-btn" data-width="2"><span class="width-sample" style="height:2px;"></span></button>
+        <button class="width-btn" data-width="4"><span class="width-sample" style="height:4px;"></span></button>
+        <button class="width-btn" data-width="6"><span class="width-sample" style="height:6px;"></span></button>
+        <button class="width-btn" data-width="8"><span class="width-sample" style="height:8px;"></span></button>
+        <button class="width-btn" data-width="12"><span class="width-sample" style="height:12px;"></span></button>
+        <button class="width-btn" data-width="16"><span class="width-sample" style="height:16px;"></span></button>
+      </div>
+
+      <button class="color-btn" data-color="#111111" style="background:#111111;"></button>
+      <button class="color-btn" data-color="#e53935" style="background:#e53935;"></button>
+      <button class="color-btn" data-color="#1e88e5" style="background:#1e88e5;"></button>
+      <button class="color-btn" data-color="#43a047" style="background:#43a047;"></button>
+
+      <div class="spacer"></div>
+
+      <button class="action-btn" id="undo" title="Undo">↶</button>
+      <button class="action-btn" id="redo" title="Redo">↷</button>
+    </div>
+    <div id="canvas-wrap">
+      <canvas id="c"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+  <script>
+    (function () {
+      const canvasEl = document.getElementById('c');
+      const wrapEl = document.getElementById('canvas-wrap');
+      const canvas = new fabric.Canvas('c', {
+        selection: false,
+        preserveObjectStacking: true
+      });
+
+      canvas.upperCanvasEl.style.touchAction = 'none';
+
+      function resizeCanvas() {
+        const rect = wrapEl.getBoundingClientRect();
+        canvas.setWidth(rect.width);
+        canvas.setHeight(rect.height);
+        canvas.requestRenderAll();
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      const toolButtons = Array.from(document.querySelectorAll('.tool-btn'));
+      const colorButtons = Array.from(document.querySelectorAll('.color-btn'));
+      const widthButtons = Array.from(document.querySelectorAll('.width-btn'));
+      const undoBtn = document.getElementById('undo');
+      const redoBtn = document.getElementById('redo');
+
+      let currentTool = 'pen';
+      let currentColor = '#111111';
+      let currentWidth = 4;
+      let penBrush = null;
+      let pixelEraserBrush = null;
+
+      const undoStack = [];
+      const redoStack = [];
+
+      function updateUndoRedo() {
+        undoBtn.disabled = undoStack.length === 0;
+        redoBtn.disabled = redoStack.length === 0;
+      }
+
+      function pushAction(action) {
+        undoStack.push(action);
+        redoStack.length = 0;
+        updateUndoRedo();
+      }
+
+      function snapshot(obj) {
+        return {
+          left: obj.left,
+          top: obj.top,
+          scaleX: obj.scaleX,
+          scaleY: obj.scaleY,
+          angle: obj.angle,
+          skewX: obj.skewX,
+          skewY: obj.skewY,
+          flipX: obj.flipX,
+          flipY: obj.flipY
+        };
+      }
+
+      function applyState(obj, state) {
+        obj.set(state);
+        obj.setCoords();
+      }
+
+      function undo() {
+        const action = undoStack.pop();
+        if (!action) return;
+        if (action.type === 'add') {
+          action.objects.forEach(obj => canvas.remove(obj));
+        } else if (action.type === 'modify') {
+          action.targets.forEach(t => applyState(t.obj, t.before));
+        }
+        redoStack.push(action);
+        canvas.requestRenderAll();
+        updateUndoRedo();
+      }
+
+      function redo() {
+        const action = redoStack.pop();
+        if (!action) return;
+        if (action.type === 'add') {
+          action.objects.forEach(obj => canvas.add(obj));
+        } else if (action.type === 'modify') {
+          action.targets.forEach(t => applyState(t.obj, t.after));
+        }
+        undoStack.push(action);
+        canvas.requestRenderAll();
+        updateUndoRedo();
+      }
+
+      undoBtn.addEventListener('click', undo);
+      redoBtn.addEventListener('click', redo);
+      updateUndoRedo();
+
+      function setTool(tool) {
+        currentTool = tool;
+        toolButtons.forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.tool === tool);
+        });
+        if (tool === 'pen') {
+          canvas.isDrawingMode = true;
+          canvas.selection = false;
+          canvas.skipTargetFind = true;
+        } else if (tool === 'select') {
+          canvas.isDrawingMode = false;
+          canvas.selection = false;
+          canvas.skipTargetFind = false;
+        } else {
+          canvas.isDrawingMode = false;
+          canvas.selection = false;
+          canvas.skipTargetFind = true;
+        }
+        if (tool !== 'select') {
+          canvas.discardActiveObject();
+          canvas.requestRenderAll();
+        }
+      }
+
+      toolButtons.forEach(btn => {
+        btn.addEventListener('click', () => setTool(btn.dataset.tool));
+      });
+
+      colorButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentColor = btn.dataset.color;
+          colorButtons.forEach(b => b.classList.toggle('active', b === btn));
+          if (canvas.freeDrawingBrush) {
+            canvas.freeDrawingBrush.color = currentColor;
+          }
+        });
+      });
+
+      function setWidth(width) {
+        currentWidth = width;
+        if (canvas.freeDrawingBrush) {
+          canvas.freeDrawingBrush.width = currentWidth;
+        }
+        widthButtons.forEach(btn => {
+          btn.classList.toggle('active', parseInt(btn.dataset.width, 10) === width);
+        });
+      }
+
+      widthButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          setWidth(parseInt(btn.dataset.width, 10));
+        });
+      });
+
+      colorButtons[0].click();
+      setWidth(4);
+      setTool('pen');
+
+      const brush = new fabric.PencilBrush(canvas);
+      brush.color = currentColor;
+      brush.width = currentWidth;
+      brush.decimate = 0.35;
+      brush.strokeLineCap = 'round';
+      brush.strokeLineJoin = 'round';
+      canvas.freeDrawingBrush = brush;
+
+      canvas.on('path:created', (opt) => {
+        const path = opt.path;
+        path.selectable = true;
+        path.evented = true;
+        pushAction({ type: 'add', objects: [path] });
+      });
+
+      // Transform tracking
+      let pendingTransform = null;
+      canvas.on('before:transform', (opt) => {
+        const target = opt.transform && opt.transform.target;
+        if (!target) return;
+        if (target.type === 'activeSelection') {
+          pendingTransform = {
+            type: 'modify',
+            targets: target._objects.map(obj => ({ obj, before: snapshot(obj) }))
+          };
+        } else {
+          pendingTransform = {
+            type: 'modify',
+            targets: [{ obj: target, before: snapshot(target) }]
+          };
+        }
+      });
+
+      canvas.on('object:modified', () => {
+        if (!pendingTransform) return;
+        pendingTransform.targets.forEach(t => {
+          t.after = snapshot(t.obj);
+        });
+        pushAction(pendingTransform);
+        pendingTransform = null;
+      });
+
+      // Pointer helpers
+      function getCanvasPointFromClient(clientX, clientY) {
+        const rect = canvas.upperCanvasEl.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        const pt = new fabric.Point(x, y);
+        return fabric.util.transformPoint(pt, fabric.util.invertTransform(canvas.viewportTransform));
+      }
+
+      // Lasso selection
+      let lassoPath = null;
+      let lassoPoints = [];
+      let lassoPointerId = null;
+      let isLassoDrawing = false;
+
+      function pointInPoly(point, poly) {
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const xi = poly[i].x, yi = poly[i].y;
+          const xj = poly[j].x, yj = poly[j].y;
+          const intersect = ((yi > point.y) !== (yj > point.y)) &&
+            (point.x < (xj - xi) * (point.y - yi) / (yj - yi + 0.0000001) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      }
+
+      function finalizeLasso() {
+        if (lassoPath) {
+          canvas.remove(lassoPath);
+          lassoPath = null;
+        }
+        canvas.skipTargetFind = false;
+        if (lassoPoints.length < 3) {
+          canvas.discardActiveObject();
+          canvas.requestRenderAll();
+          return;
+        }
+
+        const objects = canvas.getObjects().filter(obj => obj !== lassoPath);
+        const selected = [];
+        objects.forEach(obj => {
+          const corners = obj.getCoords();
+          const allInside = corners.every(pt => pointInPoly({ x: pt.x, y: pt.y }, lassoPoints));
+          if (allInside) selected.push(obj);
+        });
+
+        if (selected.length === 1) {
+          canvas.setActiveObject(selected[0]);
+        } else if (selected.length > 1) {
+          const sel = new fabric.ActiveSelection(selected, { canvas: canvas });
+          canvas.setActiveObject(sel);
+        } else {
+          canvas.discardActiveObject();
+        }
+        canvas.requestRenderAll();
+      }
+
+      // Line tool
+      let tempLine = null;
+      let lineStart = null;
+      let isLineDrawing = false;
+
+      function startLine(point) {
+        isLineDrawing = true;
+        lineStart = point;
+        tempLine = new fabric.Line([point.x, point.y, point.x, point.y], {
+          stroke: currentColor,
+          strokeWidth: currentWidth,
+          selectable: true,
+          evented: true,
+          strokeLineCap: 'round',
+          strokeLineJoin: 'round'
+        });
+        canvas.add(tempLine);
+      }
+
+      function updateLine(point) {
+        if (!tempLine) return;
+        tempLine.set({ x2: point.x, y2: point.y });
+        tempLine.setCoords();
+        canvas.requestRenderAll();
+      }
+
+      function finishLine() {
+        if (!tempLine) return;
+        pushAction({ type: 'add', objects: [tempLine] });
+        tempLine = null;
+        isLineDrawing = false;
+      }
+
+      // Circle tool
+      let tempCircle = null;
+      let circleCenter = null;
+      let isCircleDrawing = false;
+
+      function startCircle(point) {
+        isCircleDrawing = true;
+        circleCenter = point;
+        tempCircle = new fabric.Circle({
+          left: point.x,
+          top: point.y,
+          radius: 0.1,
+          stroke: currentColor,
+          strokeWidth: currentWidth,
+          fill: 'transparent',
+          selectable: true,
+          evented: true,
+          originX: 'center',
+          originY: 'center'
+        });
+        canvas.add(tempCircle);
+      }
+
+      function updateCircle(point) {
+        if (!tempCircle || !circleCenter) return;
+        const dx = point.x - circleCenter.x;
+        const dy = point.y - circleCenter.y;
+        const radius = Math.max(1, Math.hypot(dx, dy));
+        tempCircle.set({ radius: radius });
+        tempCircle.setCoords();
+        canvas.requestRenderAll();
+      }
+
+      function finishCircle() {
+        if (!tempCircle) return;
+        pushAction({ type: 'add', objects: [tempCircle] });
+        tempCircle = null;
+        isCircleDrawing = false;
+      }
+
+      // Pinch zoom + pan
+      const pointers = new Map();
+      let isGesturing = false;
+      let gestureState = null;
+
+      function getPointerInfo(e) {
+        return { x: e.clientX, y: e.clientY, type: e.pointerType };
+      }
+
+      function isTwoTouchGesture() {
+        if (pointers.size < 2) return false;
+        const vals = Array.from(pointers.values());
+        return vals[0].type === 'touch' && vals[1].type === 'touch';
+      }
+
+      function startGesture() {
+        const vals = Array.from(pointers.values());
+        const p1 = vals[0];
+        const p2 = vals[1];
+        const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+        const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        isGesturing = true;
+        gestureState = {
+          startDist: dist,
+          startZoom: canvas.getZoom(),
+          lastMid: mid
+        };
+        canvas.isDrawingMode = false;
+        isLassoDrawing = false;
+        isLineDrawing = false;
+        isCircleDrawing = false;
+      }
+
+      function updateGesture() {
+        if (!gestureState) return;
+        const vals = Array.from(pointers.values());
+        if (vals.length < 2) return;
+        const p1 = vals[0];
+        const p2 = vals[1];
+        const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+        const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        const scale = dist / gestureState.startDist;
+        const newZoom = Math.min(4, Math.max(0.5, gestureState.startZoom * scale));
+        const zoomPoint = getCanvasPointFromClient(mid.x, mid.y);
+        canvas.zoomToPoint(zoomPoint, newZoom);
+        const dx = mid.x - gestureState.lastMid.x;
+        const dy = mid.y - gestureState.lastMid.y;
+        const vpt = canvas.viewportTransform;
+        vpt[4] += dx;
+        vpt[5] += dy;
+        canvas.requestRenderAll();
+        gestureState.lastMid = mid;
+      }
+
+      function endGesture() {
+        isGesturing = false;
+        gestureState = null;
+        if (currentTool === 'pen') {
+          canvas.isDrawingMode = true;
+        }
+      }
+
+      function pointerDown(e) {
+        canvas.upperCanvasEl.setPointerCapture(e.pointerId);
+        pointers.set(e.pointerId, getPointerInfo(e));
+
+        if (isTwoTouchGesture()) {
+          startGesture();
+          return;
+        }
+        if (isGesturing) return;
+
+        const point = canvas.getPointer(e);
+        if (currentTool === 'line') {
+          startLine(point);
+        } else if (currentTool === 'circle') {
+          startCircle(point);
+        } else if (currentTool === 'select') {
+          const target = canvas.findTarget(e);
+          const active = canvas.getActiveObject();
+          if (target) return;
+          if (active) {
+            const rect = active.getBoundingRect(true, true);
+            const insideActiveBounds =
+              point.x >= rect.left &&
+              point.x <= rect.left + rect.width &&
+              point.y >= rect.top &&
+              point.y <= rect.top + rect.height;
+            if (insideActiveBounds) return;
+          }
+          canvas.discardActiveObject();
+          canvas.requestRenderAll();
+          isLassoDrawing = true;
+          lassoPointerId = e.pointerId;
+          canvas.skipTargetFind = true;
+          lassoPoints = [point];
+          lassoPath = new fabric.Polyline(lassoPoints, {
+            fill: '',
+            stroke: '#0a84ff',
+            strokeWidth: 2,
+            selectable: false,
+            evented: false,
+            strokeDashArray: [6, 4],
+            objectCaching: false
+          });
+          canvas.add(lassoPath);
+          canvas.bringToFront(lassoPath);
+        }
+      }
+
+      function pointerMove(e) {
+        if (pointers.has(e.pointerId)) {
+          pointers.set(e.pointerId, getPointerInfo(e));
+        }
+
+        if (isGesturing) {
+          updateGesture();
+          return;
+        }
+
+        const point = canvas.getPointer(e);
+        if (currentTool === 'line' && isLineDrawing) {
+          updateLine(point);
+        } else if (currentTool === 'circle' && isCircleDrawing) {
+          updateCircle(point);
+        } else if (currentTool === 'select' && isLassoDrawing && e.pointerId === lassoPointerId) {
+          const last = lassoPoints[lassoPoints.length - 1];
+          const dist = Math.hypot(point.x - last.x, point.y - last.y);
+          if (dist > 2) {
+            lassoPoints.push(point);
+            lassoPath.set({ points: lassoPoints });
+            lassoPath.setCoords();
+            canvas.bringToFront(lassoPath);
+            canvas.requestRenderAll();
+          }
+        }
+      }
+
+      function pointerUp(e) {
+        pointers.delete(e.pointerId);
+        if (isGesturing) {
+          if (pointers.size < 2) endGesture();
+          return;
+        }
+
+        if (currentTool === 'line' && isLineDrawing) {
+          finishLine();
+        } else if (currentTool === 'circle' && isCircleDrawing) {
+          finishCircle();
+        } else if (currentTool === 'select' && isLassoDrawing && e.pointerId === lassoPointerId) {
+          isLassoDrawing = false;
+          lassoPointerId = null;
+          finalizeLasso();
+        }
+      }
+
+      canvas.upperCanvasEl.addEventListener('pointerdown', pointerDown);
+      canvas.upperCanvasEl.addEventListener('pointermove', pointerMove);
+      canvas.upperCanvasEl.addEventListener('pointerup', pointerUp);
+      canvas.upperCanvasEl.addEventListener('pointercancel', pointerUp);
+    })();
+  </script>
+</body>
+</html>
