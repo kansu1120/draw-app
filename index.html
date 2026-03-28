@@ -408,74 +408,87 @@
       let suppressToggleWidth = false;
       let suppressToggleColor = false;
 
-      const undoStack = [];
+      const HISTORY_LIMIT = 30;
+      const historyStack = [];
       const redoStack = [];
+      let isRestoring = false;
 
       function updateUndoRedo() {
-        undoBtn.disabled = undoStack.length === 0;
+        undoBtn.disabled = historyStack.length <= 1;
         redoBtn.disabled = redoStack.length === 0;
       }
 
-      function pushAction(action) {
-        undoStack.push(action);
+      function captureState() {
+        const json = JSON.stringify(canvas.toDatalessJSON([
+          '_isEraserPath',
+          'globalCompositeOperation',
+          'selectable',
+          'evented',
+          'strokeUniform',
+          'strokeLineCap',
+          'strokeLineJoin'
+        ]));
+        const vpt = canvas.viewportTransform ? canvas.viewportTransform.slice() : null;
+        return { json, vpt };
+      }
+
+      function sameState(a, b) {
+        if (!a || !b) return false;
+        if (a.json !== b.json) return false;
+        if (!a.vpt && !b.vpt) return true;
+        if (!a.vpt || !b.vpt) return false;
+        for (let i = 0; i < 6; i++) {
+          if (a.vpt[i] !== b.vpt[i]) return false;
+        }
+        return true;
+      }
+
+      function pushHistory() {
+        if (isRestoring) return;
+        const state = captureState();
+        const last = historyStack[historyStack.length - 1];
+        if (sameState(last, state)) return;
+        historyStack.push(state);
+        if (historyStack.length > HISTORY_LIMIT) {
+          historyStack.shift();
+        }
         redoStack.length = 0;
         updateUndoRedo();
       }
 
-      function snapshot(obj) {
-        return {
-          left: obj.left,
-          top: obj.top,
-          scaleX: obj.scaleX,
-          scaleY: obj.scaleY,
-          angle: obj.angle,
-          skewX: obj.skewX,
-          skewY: obj.skewY,
-          flipX: obj.flipX,
-          flipY: obj.flipY,
-          fill: obj.fill
-        };
+      function pushAction() {
+        pushHistory();
       }
 
-      function applyState(obj, state) {
-        obj.set(state);
-        obj.setCoords();
+      function restoreState(state) {
+        if (!state) return;
+        isRestoring = true;
+        canvas.loadFromJSON(state.json, () => {
+          if (state.vpt) {
+            canvas.setViewportTransform(state.vpt.slice());
+          }
+          canvas.discardActiveObject();
+          canvas.renderAll();
+          isRestoring = false;
+          updateUndoRedo();
+        });
       }
 
       function undo() {
-        const action = undoStack.pop();
-        if (!action) return;
-        if (action.type === 'add') {
-          action.objects.forEach(obj => canvas.remove(obj));
-        } else if (action.type === 'remove') {
-          action.objects
-            .slice()
-            .sort((a, b) => a.index - b.index)
-            .forEach(item => {
-              canvas.insertAt(item.obj, item.index, false);
-              item.obj.setCoords();
-            });
-        } else if (action.type === 'modify') {
-          action.targets.forEach(t => applyState(t.obj, t.before));
-        }
-        redoStack.push(action);
-        canvas.requestRenderAll();
-        updateUndoRedo();
+        if (isRestoring) return;
+        if (historyStack.length <= 1) return;
+        const current = historyStack.pop();
+        redoStack.push(current);
+        const prev = historyStack[historyStack.length - 1];
+        restoreState(prev);
       }
 
       function redo() {
-        const action = redoStack.pop();
-        if (!action) return;
-        if (action.type === 'add') {
-          action.objects.forEach(obj => canvas.add(obj));
-        } else if (action.type === 'remove') {
-          action.objects.forEach(item => canvas.remove(item.obj));
-        } else if (action.type === 'modify') {
-          action.targets.forEach(t => applyState(t.obj, t.after));
-        }
-        undoStack.push(action);
-        canvas.requestRenderAll();
-        updateUndoRedo();
+        if (isRestoring) return;
+        const next = redoStack.pop();
+        if (!next) return;
+        historyStack.push(next);
+        restoreState(next);
       }
 
       undoBtn.addEventListener('click', undo);
@@ -648,6 +661,7 @@
       colorButtons[0].click();
       setWidth(4);
       setTool('pen');
+      pushHistory();
 
       canvas.on('path:created', (opt) => {
         const path = opt.path;
@@ -674,31 +688,9 @@
         return target;
       }
 
-      // Transform tracking
-      let pendingTransform = null;
-      canvas.on('before:transform', (opt) => {
-        const target = opt.transform && opt.transform.target;
-        if (!target) return;
-        if (target.type === 'activeSelection') {
-          pendingTransform = {
-            type: 'modify',
-            targets: target._objects.map(obj => ({ obj, before: snapshot(obj) }))
-          };
-        } else {
-          pendingTransform = {
-            type: 'modify',
-            targets: [{ obj: target, before: snapshot(target) }]
-          };
-        }
-      });
-
       canvas.on('object:modified', () => {
-        if (!pendingTransform) return;
-        pendingTransform.targets.forEach(t => {
-          t.after = snapshot(t.obj);
-        });
-        pushAction(pendingTransform);
-        pendingTransform = null;
+        if (isRestoring) return;
+        pushHistory();
       });
 
       // Pointer helpers
