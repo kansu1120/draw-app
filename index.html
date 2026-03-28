@@ -17,46 +17,90 @@
     html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
     #app { height: 100%; display: flex; flex-direction: column; }
     #toolbar {
+      position: sticky;
+      bottom: 0;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
       align-items: center;
-      padding: 10px;
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
+      gap: 12px;
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
-    .tool-btn, .color-btn, .action-btn {
-      border: 1px solid var(--border);
+    .group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px;
       background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      flex: 0 0 auto;
+    }
+    .tool-btn, .color-btn, .action-btn, .width-btn {
+      border: 1px solid transparent;
+      background: #f6f6f6;
       color: var(--ink);
-      padding: 8px 10px;
-      border-radius: 10px;
-      font-size: 14px;
-      min-width: 64px;
+      padding: 6px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      min-width: 54px;
+      height: 32px;
       text-align: center;
       user-select: none;
       touch-action: manipulation;
-    }
-    .tool-btn.active, .action-btn.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(10,132,255,0.15); }
-    .color-btn { width: 28px; height: 28px; padding: 0; border-radius: 999px; min-width: 28px; }
-    .color-btn.active { border: 2px solid var(--accent); }
-    .width-group { display: flex; align-items: center; gap: 6px; }
-    .width-label { font-size: 12px; color: var(--muted); }
-    .width-btn {
-      border: 1px solid var(--border);
-      background: #fff;
-      padding: 6px 8px;
-      border-radius: 10px;
-      min-width: 36px;
+      letter-spacing: 0.2px;
       display: flex;
       align-items: center;
       justify-content: center;
-      touch-action: manipulation;
     }
-    .width-btn.active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(10,132,255,0.15); }
+    .tool-btn.active, .action-btn.active, .width-btn.active {
+      background: linear-gradient(180deg, #eaf3ff, #d8e9ff);
+      border-color: rgba(10, 132, 255, 0.4);
+      box-shadow: inset 0 0 0 1px rgba(10, 132, 255, 0.25);
+      color: #0a4ea3;
+      font-weight: 600;
+    }
+    .color-btn {
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border-radius: 999px;
+      min-width: 26px;
+      background: transparent;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.12);
+    }
+    .color-btn.active { border: 2px solid var(--accent); }
+    .tool-btn .icon {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+    .tool-btn svg {
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .width-group { display: flex; align-items: center; gap: 6px; }
+    .width-label { font-size: 11px; color: var(--muted); margin-right: 2px; }
+    .width-btn {
+      min-width: 30px;
+      height: 30px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
     .width-sample {
       display: block;
-      width: 26px;
+      width: var(--dot, 8px);
+      height: var(--dot, 8px);
       background: #222;
       border-radius: 999px;
     }
@@ -68,32 +112,64 @@
 <body>
   <div id="app">
     <div id="toolbar">
-      <button class="tool-btn" data-tool="pen">Pen</button>
-      <button class="tool-btn" data-tool="line">Line</button>
-      <button class="tool-btn" data-tool="circle">Circle</button>
-      <button class="tool-btn" data-tool="select">Select</button>
-      <button class="tool-btn" data-tool="erase-pixel">Eraser</button>
-      <button class="tool-btn" data-tool="erase-object">Obj Erase</button>
-
-      <div class="width-group">
-        <span class="width-label">Stroke</span>
-        <button class="width-btn" data-width="2"><span class="width-sample" style="height:2px;"></span></button>
-        <button class="width-btn" data-width="4"><span class="width-sample" style="height:4px;"></span></button>
-        <button class="width-btn" data-width="6"><span class="width-sample" style="height:6px;"></span></button>
-        <button class="width-btn" data-width="8"><span class="width-sample" style="height:8px;"></span></button>
-        <button class="width-btn" data-width="12"><span class="width-sample" style="height:12px;"></span></button>
-        <button class="width-btn" data-width="16"><span class="width-sample" style="height:16px;"></span></button>
+      <div class="group">
+        <button class="tool-btn" data-tool="pen" title="Pen" aria-label="Pen">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <line x1="4" y1="20" x2="20" y2="4"></line>
+            <line x1="14" y1="4" x2="20" y2="10"></line>
+          </svg>
+        </button>
+        <button class="tool-btn" data-tool="line" title="Line" aria-label="Line">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <line x1="4" y1="12" x2="20" y2="12"></line>
+          </svg>
+        </button>
+        <button class="tool-btn" data-tool="circle" title="Circle" aria-label="Circle">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="7"></circle>
+          </svg>
+        </button>
+        <button class="tool-btn" data-tool="select" title="Select" aria-label="Select">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="7" stroke-dasharray="3 3"></circle>
+          </svg>
+        </button>
+        <button class="tool-btn" data-tool="erase-pixel" title="Eraser" aria-label="Eraser">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="7" width="10" height="8" rx="2"></rect>
+            <line x1="9" y1="17" x2="20" y2="17"></line>
+          </svg>
+        </button>
+        <button class="tool-btn" data-tool="erase-object" title="Object Erase" aria-label="Object Erase">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+          </svg>
+        </button>
       </div>
 
-      <button class="color-btn" data-color="#111111" style="background:#111111;"></button>
-      <button class="color-btn" data-color="#e53935" style="background:#e53935;"></button>
-      <button class="color-btn" data-color="#1e88e5" style="background:#1e88e5;"></button>
-      <button class="color-btn" data-color="#43a047" style="background:#43a047;"></button>
+      <div class="group width-group">
+        <span class="width-label">Stroke</span>
+        <button class="width-btn" data-width="2" style="--dot:2px"><span class="width-sample"></span></button>
+        <button class="width-btn" data-width="4" style="--dot:4px"><span class="width-sample"></span></button>
+        <button class="width-btn" data-width="6" style="--dot:6px"><span class="width-sample"></span></button>
+        <button class="width-btn" data-width="8" style="--dot:8px"><span class="width-sample"></span></button>
+        <button class="width-btn" data-width="12" style="--dot:12px"><span class="width-sample"></span></button>
+        <button class="width-btn" data-width="16" style="--dot:16px"><span class="width-sample"></span></button>
+      </div>
 
-      <div class="spacer"></div>
+      <div class="group">
+        <button class="color-btn" data-color="#111111" style="background:#111111;"></button>
+        <button class="color-btn" data-color="#e53935" style="background:#e53935;"></button>
+        <button class="color-btn" data-color="#1e88e5" style="background:#1e88e5;"></button>
+        <button class="color-btn" data-color="#43a047" style="background:#43a047;"></button>
+      </div>
 
-      <button class="action-btn" id="undo" title="Undo">↶</button>
-      <button class="action-btn" id="redo" title="Redo">↷</button>
+      <div class="group">
+        <button class="action-btn" id="undo" title="Undo">↶</button>
+        <button class="action-btn" id="redo" title="Redo">↷</button>
+      </div>
     </div>
     <div id="canvas-wrap">
       <canvas id="c"></canvas>
@@ -171,6 +247,14 @@
         if (!action) return;
         if (action.type === 'add') {
           action.objects.forEach(obj => canvas.remove(obj));
+        } else if (action.type === 'remove') {
+          action.objects
+            .slice()
+            .sort((a, b) => a.index - b.index)
+            .forEach(item => {
+              canvas.insertAt(item.obj, item.index, false);
+              item.obj.setCoords();
+            });
         } else if (action.type === 'modify') {
           action.targets.forEach(t => applyState(t.obj, t.before));
         }
@@ -184,6 +268,8 @@
         if (!action) return;
         if (action.type === 'add') {
           action.objects.forEach(obj => canvas.add(obj));
+        } else if (action.type === 'remove') {
+          action.objects.forEach(item => canvas.remove(item.obj));
         } else if (action.type === 'modify') {
           action.targets.forEach(t => applyState(t.obj, t.after));
         }
@@ -205,7 +291,17 @@
           canvas.isDrawingMode = true;
           canvas.selection = false;
           canvas.skipTargetFind = true;
+          if (penBrush) canvas.freeDrawingBrush = penBrush;
+        } else if (tool === 'erase-pixel') {
+          canvas.isDrawingMode = true;
+          canvas.selection = false;
+          canvas.skipTargetFind = true;
+          if (pixelEraserBrush) canvas.freeDrawingBrush = pixelEraserBrush;
         } else if (tool === 'select') {
+          canvas.isDrawingMode = false;
+          canvas.selection = false;
+          canvas.skipTargetFind = false;
+        } else if (tool === 'erase-object') {
           canvas.isDrawingMode = false;
           canvas.selection = false;
           canvas.skipTargetFind = false;
@@ -228,7 +324,10 @@
         btn.addEventListener('click', () => {
           currentColor = btn.dataset.color;
           colorButtons.forEach(b => b.classList.toggle('active', b === btn));
-          if (canvas.freeDrawingBrush) {
+          if (penBrush) {
+            penBrush.color = currentColor;
+          }
+          if (canvas.freeDrawingBrush === penBrush) {
             canvas.freeDrawingBrush.color = currentColor;
           }
         });
@@ -236,9 +335,8 @@
 
       function setWidth(width) {
         currentWidth = width;
-        if (canvas.freeDrawingBrush) {
-          canvas.freeDrawingBrush.width = currentWidth;
-        }
+        if (penBrush) penBrush.width = currentWidth;
+        if (pixelEraserBrush) pixelEraserBrush.width = currentWidth;
         widthButtons.forEach(btn => {
           btn.classList.toggle('active', parseInt(btn.dataset.width, 10) === width);
         });
@@ -250,22 +348,36 @@
         });
       });
 
+      penBrush = new fabric.PencilBrush(canvas);
+      penBrush.decimate = 0.35;
+      penBrush.strokeLineCap = 'round';
+      penBrush.strokeLineJoin = 'round';
+
+      pixelEraserBrush = new fabric.PencilBrush(canvas);
+      pixelEraserBrush.decimate = 0.2;
+      pixelEraserBrush.color = '#ffffff';
+      pixelEraserBrush.globalCompositeOperation = 'destination-out';
+      pixelEraserBrush.strokeLineCap = 'round';
+      pixelEraserBrush.strokeLineJoin = 'round';
+
       colorButtons[0].click();
       setWidth(4);
       setTool('pen');
 
-      const brush = new fabric.PencilBrush(canvas);
-      brush.color = currentColor;
-      brush.width = currentWidth;
-      brush.decimate = 0.35;
-      brush.strokeLineCap = 'round';
-      brush.strokeLineJoin = 'round';
-      canvas.freeDrawingBrush = brush;
-
       canvas.on('path:created', (opt) => {
         const path = opt.path;
-        path.selectable = true;
-        path.evented = true;
+        if (currentTool === 'erase-pixel') {
+          path.stroke = '#ffffff';
+          path.globalCompositeOperation = 'destination-out';
+          path.selectable = false;
+          path.evented = false;
+          path._isEraserPath = true;
+        } else {
+          path.selectable = true;
+          path.evented = true;
+          path.strokeUniform = true;
+        }
+        path.setCoords();
         pushAction({ type: 'add', objects: [path] });
       });
 
@@ -335,7 +447,7 @@
           return;
         }
 
-        const objects = canvas.getObjects().filter(obj => obj !== lassoPath);
+        const objects = canvas.getObjects().filter(obj => obj !== lassoPath && !obj._isEraserPath);
         const selected = [];
         objects.forEach(obj => {
           const corners = obj.getCoords();
@@ -370,6 +482,7 @@
           strokeLineCap: 'round',
           strokeLineJoin: 'round'
         });
+        tempLine.strokeUniform = true;
         canvas.add(tempLine);
       }
 
@@ -407,6 +520,7 @@
           originX: 'center',
           originY: 'center'
         });
+        tempCircle.strokeUniform = true;
         canvas.add(tempCircle);
       }
 
@@ -427,10 +541,89 @@
         isCircleDrawing = false;
       }
 
+      // Object eraser
+      let isObjectErasing = false;
+      let erasedItems = [];
+      let erasedSet = new Set();
+
+      function removeObject(obj) {
+        if (!obj || obj._isEraserPath) return;
+        if (erasedSet.has(obj)) return;
+        const index = canvas.getObjects().indexOf(obj);
+        erasedSet.add(obj);
+        erasedItems.push({ obj, index });
+        canvas.remove(obj);
+      }
+
+      function eraseAtEvent(e) {
+        const target = canvas.findTarget(e);
+        if (!target) return;
+        if (target.type === 'activeSelection') {
+          target._objects.forEach(removeObject);
+          canvas.discardActiveObject();
+        } else {
+          removeObject(target);
+        }
+      }
+
+      function startObjectErase(e) {
+        isObjectErasing = true;
+        erasedItems = [];
+        erasedSet = new Set();
+        eraseAtEvent(e);
+      }
+
+      function finishObjectErase() {
+        if (!isObjectErasing) return;
+        if (erasedItems.length > 0) {
+          pushAction({ type: 'remove', objects: erasedItems });
+        }
+        isObjectErasing = false;
+        erasedItems = [];
+        erasedSet = new Set();
+      }
+
       // Pinch zoom + pan
       const pointers = new Map();
       let isGesturing = false;
       let gestureState = null;
+      let blockDrawing = false;
+      let drawDelayTimer = null;
+      let pendingDraw = null;
+
+      const originalMouseDownInDrawingMode = canvas._onMouseDownInDrawingMode.bind(canvas);
+      const originalMouseMoveInDrawingMode = canvas._onMouseMoveInDrawingMode.bind(canvas);
+
+      canvas._onMouseDownInDrawingMode = function (e) {
+        if (blockDrawing) return;
+        return originalMouseDownInDrawingMode(e);
+      };
+      canvas._onMouseMoveInDrawingMode = function (e) {
+        if (blockDrawing) return;
+        return originalMouseMoveInDrawingMode(e);
+      };
+
+      function cancelPendingDraw() {
+        if (drawDelayTimer) {
+          clearTimeout(drawDelayTimer);
+          drawDelayTimer = null;
+        }
+        pendingDraw = null;
+      }
+
+      function scheduleTouchDraw(e) {
+        cancelPendingDraw();
+        blockDrawing = true;
+        pendingDraw = { e, pointerId: e.pointerId };
+        drawDelayTimer = setTimeout(() => {
+          if (!pendingDraw) return;
+          blockDrawing = false;
+          if (currentTool === 'pen' || currentTool === 'erase-pixel') {
+            originalMouseDownInDrawingMode(pendingDraw.e);
+          }
+          pendingDraw = null;
+        }, 90);
+      }
 
       function getPointerInfo(e) {
         return { x: e.clientX, y: e.clientY, type: e.pointerType };
@@ -443,6 +636,8 @@
       }
 
       function startGesture() {
+        cancelPendingDraw();
+        blockDrawing = true;
         const vals = Array.from(pointers.values());
         const p1 = vals[0];
         const p2 = vals[1];
@@ -458,6 +653,9 @@
         isLassoDrawing = false;
         isLineDrawing = false;
         isCircleDrawing = false;
+        isObjectErasing = false;
+        erasedItems = [];
+        erasedSet = new Set();
       }
 
       function updateGesture() {
@@ -484,7 +682,8 @@
       function endGesture() {
         isGesturing = false;
         gestureState = null;
-        if (currentTool === 'pen') {
+        blockDrawing = false;
+        if (currentTool === 'pen' || currentTool === 'erase-pixel') {
           canvas.isDrawingMode = true;
         }
       }
@@ -500,6 +699,13 @@
         if (isGesturing) return;
 
         const point = canvas.getPointer(e);
+        if ((currentTool === 'pen' || currentTool === 'erase-pixel') && e.pointerType === 'touch') {
+          scheduleTouchDraw(e);
+        }
+        if (currentTool === 'erase-object') {
+          startObjectErase(e);
+          return;
+        }
         if (currentTool === 'line') {
           startLine(point);
         } else if (currentTool === 'circle') {
@@ -548,6 +754,13 @@
         }
 
         const point = canvas.getPointer(e);
+        if (pendingDraw && pendingDraw.pointerId === e.pointerId) {
+          pendingDraw.e = e;
+        }
+        if (currentTool === 'erase-object' && isObjectErasing) {
+          eraseAtEvent(e);
+          return;
+        }
         if (currentTool === 'line' && isLineDrawing) {
           updateLine(point);
         } else if (currentTool === 'circle' && isCircleDrawing) {
@@ -572,6 +785,14 @@
           return;
         }
 
+        if (pendingDraw && pendingDraw.pointerId === e.pointerId) {
+          cancelPendingDraw();
+          blockDrawing = false;
+        }
+        if (currentTool === 'erase-object' && isObjectErasing) {
+          finishObjectErase();
+          return;
+        }
         if (currentTool === 'line' && isLineDrawing) {
           finishLine();
         } else if (currentTool === 'circle' && isCircleDrawing) {
