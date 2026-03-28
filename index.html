@@ -23,7 +23,9 @@
       --shadow-tight: 0 0 0 rgba(0, 0, 0, 0);
       --radius: 20px;
       --btn: 40px;
+      --grid-opacity: 0;
     }
+    html.grid-on { --grid-opacity: 0.35; }
     * { box-sizing: border-box; }
     html, body {
       height: 100%;
@@ -224,6 +226,7 @@
       margin-left: 6px;
       opacity: 0.7;
     }
+    .toggle-btn.no-arrow::after { content: none; }
     .group.open .toggle-btn::after {
       transform: rotate(-135deg);
     }
@@ -281,6 +284,18 @@
       min-height: 0;
       position: relative;
       background: radial-gradient(600px 420px at 18% 8%, rgba(10, 132, 255, 0.06), transparent 60%), var(--paper);
+    }
+    #canvas-wrap::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(15, 23, 42, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.08) 1px, transparent 1px);
+      background-size: 28px 28px, 28px 28px;
+      opacity: var(--grid-opacity);
+      pointer-events: none;
+      z-index: 2;
     }
     canvas { display: block; width: 100%; height: 100%; touch-action: none; position: relative; z-index: 1; }
     .spacer { flex: 1 1 auto; }
@@ -384,6 +399,18 @@
         </div>
         </div>
 
+        <div class="group control-group" id="grid-group">
+        <button class="toggle-btn no-arrow" id="toggle-grid" title="Grid" aria-label="Grid">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="4" y="4" width="6" height="6"></rect>
+            <rect x="14" y="4" width="6" height="6"></rect>
+            <rect x="4" y="14" width="6" height="6"></rect>
+            <rect x="14" y="14" width="6" height="6"></rect>
+          </svg>
+          <span class="label">Grid</span>
+        </button>
+        </div>
+
         </div>
       </div>
     </div>
@@ -457,6 +484,7 @@
       const redoBtn = document.getElementById('redo');
       const widthPreview = document.getElementById('width-preview');
       const colorPreview = document.getElementById('color-preview');
+      const gridToggleBtn = document.getElementById('toggle-grid');
 
       if (panelLayer) {
         panelLayer.appendChild(widthPanel);
@@ -477,6 +505,7 @@
       let widthOpenedAt = 0;
       let colorOpenedAt = 0;
       const PANEL_IGNORE_MS = 100;
+      let gridEnabled = false;
 
       const HISTORY_LIMIT = 30;
       const historyStack = [];
@@ -490,6 +519,14 @@
         }
         if (colorPreview) {
           colorPreview.style.background = currentColor;
+        }
+      }
+
+      function setGrid(enabled) {
+        gridEnabled = enabled;
+        document.documentElement.classList.toggle('grid-on', enabled);
+        if (gridToggleBtn) {
+          gridToggleBtn.classList.toggle('active', enabled);
         }
       }
 
@@ -813,6 +850,12 @@
         startDragPick('color', e);
       });
 
+      if (gridToggleBtn) {
+        gridToggleBtn.addEventListener('click', () => {
+          setGrid(!gridEnabled);
+        });
+      }
+
       function isInsideOpenPanel(target) {
         if (widthGroup.classList.contains('open') && widthPanel.contains(target)) return true;
         if (colorGroup.classList.contains('open') && colorPanel.contains(target)) return true;
@@ -912,6 +955,7 @@
       setWidth(4);
       setTool('pen');
       pushHistory();
+      setGrid(false);
 
       canvas.on('path:created', (opt) => {
         const path = opt.path;
