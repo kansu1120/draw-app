@@ -19,17 +19,23 @@
     #toolbar {
       position: sticky;
       bottom: 0;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      display: block;
       padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(16px);
       border-top: 1px solid var(--border);
+      overflow: visible;
+      z-index: 50;
+    }
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
     .group {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -90,9 +96,18 @@
     .width-group { display: flex; align-items: center; gap: 6px; }
     .panel {
       display: none;
+      flex-direction: column;
       align-items: center;
-      gap: 6px;
-      padding-left: 4px;
+      gap: 8px;
+      padding: 10px;
+      position: absolute;
+      top: 44px;
+      left: 0;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.16);
+      z-index: 200;
     }
     .group.open .panel { display: flex; }
     .toggle-btn {
@@ -137,7 +152,8 @@
 <body>
   <div id="app">
     <div id="toolbar">
-      <div class="group">
+      <div class="toolbar-row">
+        <div class="group">
         <button class="tool-btn" data-tool="pen" title="Pen" aria-label="Pen">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
             <line x1="4" y1="20" x2="20" y2="4"></line>
@@ -172,9 +188,9 @@
             <line x1="15" y1="9" x2="9" y2="15"></line>
           </svg>
         </button>
-      </div>
+        </div>
 
-      <div class="group width-group" id="width-group">
+        <div class="group width-group" id="width-group">
         <button class="toggle-btn" id="toggle-width" title="Stroke" aria-label="Stroke">Stroke</button>
         <div class="panel" id="width-panel">
           <button class="width-btn" data-width="2" style="--dot:2px"><span class="width-sample"></span></button>
@@ -184,9 +200,9 @@
           <button class="width-btn" data-width="12" style="--dot:12px"><span class="width-sample"></span></button>
           <button class="width-btn" data-width="16" style="--dot:16px"><span class="width-sample"></span></button>
         </div>
-      </div>
+        </div>
 
-      <div class="group" id="color-group">
+        <div class="group" id="color-group">
         <button class="toggle-btn" id="toggle-color" title="Color" aria-label="Color">Color</button>
         <div class="panel" id="color-panel">
           <button class="color-btn" data-color="#111111" style="background:#111111;"></button>
@@ -194,11 +210,12 @@
           <button class="color-btn" data-color="#1e88e5" style="background:#1e88e5;"></button>
           <button class="color-btn" data-color="#43a047" style="background:#43a047;"></button>
         </div>
-      </div>
+        </div>
 
-      <div class="group">
+        <div class="group">
         <button class="action-btn" id="undo" title="Undo">↶</button>
         <button class="action-btn" id="redo" title="Redo">↷</button>
+        </div>
       </div>
     </div>
     <div id="canvas-wrap">
