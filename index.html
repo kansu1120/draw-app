@@ -36,7 +36,13 @@
       font-family: "Manrope", "SF Pro Display", "Segoe UI", system-ui, -apple-system, sans-serif;
       letter-spacing: 0.1px;
     }
-    #app { height: 100%; display: flex; flex-direction: column; }
+    :root { --vh: 1vh; }
+    #app {
+      height: calc(var(--vh) * 100);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
     #toolbar {
       position: fixed;
       left: 0;
@@ -67,16 +73,14 @@
       pointer-events: none;
     }
     .toolbar-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto auto;
       align-items: center;
       gap: 10px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
       max-width: 1200px;
       margin: 0 auto;
       padding: 2px 4px;
     }
-    .toolbar-row::-webkit-scrollbar { display: none; }
     .group {
       display: flex;
       align-items: center;
@@ -91,12 +95,13 @@
     }
     .tool-group {
       flex: 1 1 auto;
-      min-width: 0;
+      min-width: 180px;
       overflow-x: auto;
       gap: 6px;
       padding: 8px;
       border-radius: 22px;
       scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
     }
     .tool-group::-webkit-scrollbar { display: none; }
     .control-group { padding: 6px 8px; }
@@ -262,6 +267,10 @@
     }
     canvas { display: block; width: 100%; height: 100%; touch-action: none; position: relative; z-index: 1; }
     .spacer { flex: 1 1 auto; }
+    @media (max-width: 360px) {
+      .tool-group { min-width: 140px; }
+      .toggle-btn { min-width: 80px; }
+    }
   </style>
 </head>
 <body>
@@ -377,13 +386,29 @@
 
       canvas.upperCanvasEl.style.touchAction = 'none';
 
+      function setViewportHeight() {
+        const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        document.documentElement.style.setProperty('--vh', `${height * 0.01}px`);
+      }
+
       function resizeCanvas() {
         const rect = wrapEl.getBoundingClientRect();
         canvas.setWidth(rect.width);
         canvas.setHeight(rect.height);
         canvas.requestRenderAll();
       }
-      window.addEventListener('resize', resizeCanvas);
+      window.addEventListener('resize', () => {
+        setViewportHeight();
+        resizeCanvas();
+      });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+          setViewportHeight();
+          resizeCanvas();
+        });
+        window.visualViewport.addEventListener('scroll', setViewportHeight);
+      }
+      setViewportHeight();
       resizeCanvas();
 
       const toolButtons = Array.from(document.querySelectorAll('.tool-btn'));
